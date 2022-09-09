@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset>
+    <!-- Directories -->
+    <file>src</file>
+
+    <!-- Ignore some directories -->
+    <exclude-pattern>src/Bootstrap.php</exclude-pattern>
+    <exclude-pattern>src/messages/</exclude-pattern>
+
+    <!-- We just use PSR-2 -->
+    <rule ref="PSR2"/>
+
+    <!-- Configs -->
+    <arg name="colors"/>
+
+</ruleset>

@@ -1,0 +1,62 @@
+{
+  "name": "rootlocal/yii2-sortable-grid-view",
+  "description": "Sortable Grid View",
+  "type": "yii2-extension",
+  "keywords": [
+    "yii2",
+    "extension",
+    "sortable"
+  ],
+  "license": "BSD-3-Clause",
+  "authors": [
+    {
+      "name": "Alexander Zakharov",
+      "email": "sys@eml.ru",
+      "homepage": "https://github.com/rootlocal/yii2-sortable-grid-view"
+    }
+  ],
+  "support": {
+    "issues": "https://github.com/rootlocal/yii2-sortable-grid-view/issues?state=open",
+    "source": "https://github.com/rootlocal/yii2-sortable-grid-view"
+  },
+  "require": {
+    "php": ">=7.4||^8.0||^8.1",
+    "yiisoft/yii2": "^2.0"
+  },
+  "require-dev": {
+    "yiisoft/yii2-bootstrap": "~2.0.0",
+    "yiisoft/yii2-faker": "~2.0.0",
+    "codeception/codeception": "^4.1",
+    "codeception/module-asserts": "^2.0",
+    "codeception/module-yii2": "^1.1",
+    "codeception/module-filesystem": "^1.0",
+    "symfony/browser-kit": ">=2.7 <=4.2.4",
+    "codeception/module-phpbrowser": "^1.0",
+    "codeception/verify": "^2.2",
+    "squizlabs/php_codesniffer": "3.*",
+    "phploc/phploc": "^7.0",
+    "pdepend/pdepend": "^2.10",
+    "phpmd/phpmd": "^2.12",
+    "sebastian/phpcpd": "^6.0"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true
+    },
+    "process-timeout": 1800,
+    "fxp-asset": {
+      "enabled": false
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "rootlocal\\widgets\\sortable\\": "src/"
+    }
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
+    }
+  ]
+}
