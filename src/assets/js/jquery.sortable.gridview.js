@@ -1,8 +1,34 @@
 ;(function ($, window, document, undefined) {
-    let pluginName = 'sortable_grid_view', id, $this, csrfToken, action,
-        defaults = {
-            action: 'sort',
-        };
+    let pluginName = 'sortable_grid_view';
+    let $this, csrfToken;
+    let action, delay, items, handle, axis, cursor, opacity;
+
+    let defaults = {
+
+        // Адрес url экшена котроллера на который отправляется запрос
+        action: 'sort',
+
+        // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения: 'x'
+        // (элемент можно будет перетаскивать только по горизонтали) и 'y' (элемент можно будет перетаскивать только по вертикали).
+        axis: 'y',
+
+        // Позволяет задать вид курсора мыши во время перетаскивания.
+        cursor: 'move',
+
+        // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
+        opacity: 0.9,
+
+        // Устанавливает задержку в миллисекундах перед тем, как элемент начнет перетаскиваться
+        // (может использоваться для предотвращения перетаскивания при случайном щелчке на элементе).
+        delay: 0,
+
+        // Указывает какие элементы в группе могут быть отсортированы.
+        // Значение  '> *' - все элементы в выбранной группе
+        items: 'tr',
+
+        // Указывает элемент, при щелчке на который начнется перетаскивание.
+        handle: '.sortable-column-btn',
+    };
 
     function Plugin(element, options) {
         this.element = element;
@@ -10,15 +36,20 @@
         this._defaults = defaults;
         this._name = pluginName;
         csrfToken = yii.getCsrfToken();
+
         action = this.options.action;
+        delay = this.options.delay;
+        items = this.options.items;
+        handle = this.options.handle;
+
         this.init();
     }
 
     Plugin.prototype.init = function () {
-        _sortableGrid(action);
+        _sortable();
     };
 
-    const fixHelper = function (e, ui) {
+    this._helper = function (e, ui) {
 
         ui.children().each(function () {
             $(this).width($(this).width());
@@ -27,7 +58,7 @@
         return ui;
     };
 
-    this._sortableGrid = function (action) {
+    this._sortable = function () {
         const grid = $('tbody', $this);
         const initialIndex = [];
 
@@ -37,10 +68,14 @@
 
         // https://api.jqueryui.com/sortable/
         grid.sortable({
-            items: 'tr',
-            axis: 'y',
-            cursor: "move",
-            opacity: 0.9,
+            items: items,
+            delay: delay,
+            handle: handle,
+            axis: axis,
+            cursor: cursor,
+            opacity: opacity,
+            // The jQuery object representing the helper being sorted.
+            helper: _helper,
             // This event is triggered when using connected lists, every connected list on drag start receives it.
             activate: function (event, ui) {
             },
@@ -81,9 +116,7 @@
 
                 };
 
-            },
-            // The jQuery object representing the helper being sorted.
-            helper: fixHelper,
+            }
         }).disableSelection();
     };
 

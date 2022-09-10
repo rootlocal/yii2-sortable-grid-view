@@ -58,7 +58,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      * @throws InvalidConfigException
      * @throws Throwable
      */
-    public function gridSort(array $items = [])
+    public function gridSort(array $items = []): void
     {
         if (empty($items)) {
             return;
@@ -97,7 +97,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      * @return void
      * @throws InvalidConfigException
      */
-    public function beforeInsert()
+    public function beforeInsert(): void
     {
         /** @var ActiveRecord $model */
         $model = $this->owner;

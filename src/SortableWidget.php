@@ -3,26 +3,26 @@
 namespace rootlocal\widgets\sortable;
 
 
-use yii\base\InvalidConfigException;
+use yii\base\Widget;
 use yii\helpers\Json;
 use yii\helpers\Url;
-use yii\grid\GridView;
 use yii\web\JsExpression;
 use yii\web\View;
 
 /**
- * Class SortableGridViewWidget Sortable version of Yii2 GridView widget.
+ * Class SortableWidget Sortable version of Yii2 Sortable widget.
  *
  * @property-read string $hash Hash variable to store the plugin {@see SortableGridView::getHash()}
  * @property-read void $jsOptions Getting JS object options {@see SortableGridView::getJsOptions()}
  *
  * @package rootlocal\widgets\sortable
  */
-class SortableGridViewWidget extends GridView
+class SortableWidget extends Widget
 {
     /** @var string|array Sort action */
     public $sortableAction = ['sort'];
-
+    /** @var string Css JQuery Selector Default .grid-view */
+    public string $selector = '.grid-view';
     /** @var string string The name of the jQuery plugin to use for this widget. */
     public const PLUGIN_NAME = 'sortable_grid_view';
 
@@ -34,21 +34,11 @@ class SortableGridViewWidget extends GridView
 
     /**
      * {@inheritDoc}
-     * @throws InvalidConfigException
      */
     public function init()
     {
         parent::init();
-
-        if (array_key_exists('class', $this->tableOptions)) {
-            $this->tableOptions['class'] .= ' sortable-grid-view';
-        } else {
-            $this->tableOptions['class'] = 'table table-bordered sortable-grid-view';
-        }
-
         $this->sortableAction = Url::to($this->sortableAction);
-        $this->tableOptions['id'] = $this->getHash();
-
         $view = $this->getView();
         $this->registerAssets($view);
         $this->registerClientScripts($view);
@@ -60,9 +50,9 @@ class SortableGridViewWidget extends GridView
      * @param View $view
      * @return void
      */
-    protected function registerAssets(View $view)
+    protected function registerAssets(View $view): void
     {
-        SortableGridAsset::register($view);
+        SortableAsset::register($view);
     }
 
     /**
@@ -71,10 +61,10 @@ class SortableGridViewWidget extends GridView
      * @param View $view
      * @return void
      */
-    public function registerClientScripts(View $view)
+    public function registerClientScripts(View $view): void
     {
         $this->hashPluginOptions($view);
-        $js = sprintf('jQuery("#%s").%s(%s);', $this->getHash(), self::PLUGIN_NAME, $this->getHash());
+        $js = sprintf('jQuery("%s").%s(%s);', $this->selector, self::PLUGIN_NAME, $this->getHash());
         $view->registerJs(new JsExpression($js));
     }
 

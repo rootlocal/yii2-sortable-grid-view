@@ -8,11 +8,11 @@ use yii\web\JqueryAsset;
 use yii\web\YiiAsset;
 
 /**
- * Class SortableGridAsset
+ * Class SortableAsset
  *
  * @package rootlocal\widgets\sortable
  */
-class SortableGridAsset extends AssetBundle
+class SortableAsset extends AssetBundle
 {
     /** @var string[] */
     public $js = ['js/jquery.sortable.gridview.js'];

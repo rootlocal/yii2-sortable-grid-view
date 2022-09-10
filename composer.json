@@ -54,6 +54,9 @@
       "rootlocal\\widgets\\sortable\\": "src/"
     }
   },
+  "extra": {
+    "bootstrap": "rootlocal\\widgets\\sortable\\Bootstrap"
+  },
   "repositories": [
     {
       "type": "composer",
