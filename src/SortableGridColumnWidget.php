@@ -8,12 +8,26 @@ use yii\grid\Column;
 use yii\helpers\Html;
 
 /**
- * Class SortableGridColumn
+ * Class SortableGridColumn Sortable Column for Yii2 Grid widget
+ *
+ * To add an SortableGridColumn to the gridview. Configuration as follows:
+ *
+ * ```php
+ * 'columns' => [
+ *     // ...
+ *     [
+ *         'class' => SortableGridColumnWidget::class,
+ *         // you may configure additional properties here
+ *     ],
+ * ]
+ * ```
  *
  * @package rootlocal\widgets\sortable
  */
 class SortableGridColumnWidget extends Column
 {
+    /** @var array [[SortableWidget]] Sortable JQuery Widget */
+    public array $sortableWidgetOptions = [];
     /**
      * @var array the HTML attributes for the header cell tag.
      * @see \yii\helpers\Html::renderTagAttributes() for details on how attributes are being rendered.
@@ -87,8 +101,6 @@ class SortableGridColumnWidget extends Column
     public array $visibleButtons = [];
     /** @var array html options to be applied to the [[initDefaultButton()|default button]]. */
     public array $buttonOptions = [];
-    /** @var array Options for {@see SortableWidget} */
-    public array $sortableWidgetOptions = [];
 
 
     /**

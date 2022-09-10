@@ -3,6 +3,7 @@
 [![Latest Stable Version](https://img.shields.io/packagist/v/rootlocal/yii2-sortable-grid-view.svg)](https://packagist.org/packages/rootlocal/yii2-sortable-grid-view)
 
 * [Source code](https://github.com/rootlocal/yii2-sortable-grid-view)
+* [API Documentation](https://rootlocal.github.io/yii2-sortable-grid-view-docs/api/)
 
 ## install
 
