@@ -100,7 +100,8 @@ class SortableWidget extends Widget
     private function registerClientScripts(View $view): void
     {
         $this->hashPluginOptions($view);
-        $js = sprintf('jQuery("%s").%s(%s);', $this->selector, self::PLUGIN_NAME, $this->getHash());
+        $js = sprintf('jQuery("%s").%s(%s);',
+            $this->selector, self::PLUGIN_NAME, $this->getHash());
         $view->registerJs(new JsExpression($js));
     }
 

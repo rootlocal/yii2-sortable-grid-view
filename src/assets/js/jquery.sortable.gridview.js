@@ -21,7 +21,7 @@
         // Значение  '> *' - все элементы в выбранной группе
         items: 'tr',
         // Указывает элемент, при щелчке на который начнется перетаскивание.
-        handle: '.sortable-column-btn',
+        handle: '.sortable-column-btn-sort',
         // класс, который будет назначен элементу, созданному для заполнения позиции, занимаемой сортируемым элементом до его перемещения в новое расположение
         placeholder: 'sortable-column-empty',
         // заблокировать элемент, нужно добавить к нему класс disabled
@@ -43,13 +43,44 @@
         handle = this.options.handle;
         placeholder = this.options.placeholder;
         cancel = this.options.cancel;
-        tolerance  = this.options.tolerance;
+        tolerance = this.options.tolerance;
         zIndex = this.options.zIndex;
 
         this.init();
     }
 
     Plugin.prototype.init = function () {
+
+        $('.sortable-column-btn-up', $this).bind('click', function () {
+            let owner = $(this).parents('tr');
+            // send request server
+            _send(JSON.stringify({'id': owner.data('key'), action: 'up'}));
+
+            $(this).parents('tbody > tr').each(function (el) {
+                let target = $(this).prev();
+                let copy_owner = owner.clone(true);
+                let copy_target = target.clone(true);
+                target.replaceWith(copy_owner);
+                owner.replaceWith(copy_target);
+            });
+
+        });
+
+        $('.sortable-column-btn-down', $this).bind('click', function () {
+            let owner = $(this).parents('tr');
+            // send request server
+            _send(JSON.stringify({'id': owner.data('key'), action: 'down'}));
+
+            $(this).parents('tbody > tr').each(function (el) {
+                let target = $(this).next();
+                let copy_owner = owner.clone(true);
+                let copy_target = target.clone(true);
+                target.replaceWith(copy_owner);
+                owner.replaceWith(copy_target);
+            });
+
+        });
+
         _sortable();
     };
 
@@ -61,6 +92,31 @@
 
         return ui;
     };
+
+    this._send = function (json) {
+        let xhr = new XMLHttpRequest();
+        let url = encodeURI(action);
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.send(json);
+
+        xhr.ontimeout = function () {
+            console.log('Connection timeout');
+        }
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return; // DONE
+
+            if (xhr.status !== 200) {
+                throw Error('Error request server status: ' + this.status);
+            } else {
+                //console.log(xhr.responseText);
+            }
+        };
+
+    }
 
     this._sortable = function () {
         const grid = $('tbody', $this);
@@ -115,31 +171,8 @@
                     ++i;
                 });
 
-                let xhr = new XMLHttpRequest();
-                let url = encodeURI(action);
-                xhr.open('POST', url, true);
-                xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                xhr.setRequestHeader('X-CSRF-Token', csrfToken);
-                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-                let json = JSON.stringify({'items': items});
-                xhr.send(json);
-
-                xhr.onreadystatechange = function () {
-
-                    if (this.readyState !== 4) {
-                        return false;
-                    }
-
-                    if (this.status !== 200) {
-                        throw Error('Error request server status: ' + this.status);
-                    }
-
-                    /*
-                    if (this.response && JSON.parse(this.response).status !== 'success') {
-                    }
-                    */
-
-                };
+                // Send Items
+                _send(JSON.stringify({'items': items}));
 
             }
         }).disableSelection();

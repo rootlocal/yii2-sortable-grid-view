@@ -3,8 +3,10 @@
 namespace rootlocal\widgets\sortable;
 
 
+use Closure;
 use Yii;
 use yii\grid\Column;
+use yii\helpers\ArrayHelper;
 use yii\helpers\Html;
 
 /**
@@ -45,7 +47,7 @@ class SortableGridColumnWidget extends Column
      *
      * @see buttons
      */
-    public string $template = '{sort}';
+    public string $template = '{sort} {up} {down}';
     /**
      * @var array button rendering callbacks. The array keys are the button names (without curly brackets),
      * and the values are the corresponding button rendering callbacks. The callbacks should use the following
@@ -78,6 +80,8 @@ class SortableGridColumnWidget extends Column
      */
     public array $icons = [
         'sort' => '<i class="fa fa-arrows" aria-hidden="true"></i>',
+        'up' => '<i class="fa fa-arrow-up"></i>',
+        'down' => '<i class="fa fa-arrow-down"></i>',
     ];
     /** @var array visibility conditions for each button. The array keys are the button names (without curly brackets),
      * and the values are the boolean true/false or the anonymous function. When the button name is not specified in
@@ -109,6 +113,10 @@ class SortableGridColumnWidget extends Column
     public function init()
     {
         parent::init();
+
+        $defaultContentOptions = ['class' => 'sortable-td'];
+        $this->contentOptions = ArrayHelper::merge($defaultContentOptions, $this->contentOptions);
+
         $this->initDefaultButtons();
         $objClass = $this->sortableWidgetOptions;
         $objClass['class'] = SortableWidget::class;
@@ -122,7 +130,17 @@ class SortableGridColumnWidget extends Column
      */
     protected function initDefaultButtons(): void
     {
-        $this->initDefaultButton('sort', 'sort', ['class' => 'sortable-column-btn']);
+        $this->initDefaultButton('sort', 'sort', [
+            'class' => 'sortable-column-btn sortable-column-btn-sort',
+        ]);
+
+        $this->initDefaultButton('up', 'up', [
+            'class' => 'sortable-column-btn sortable-column-btn-up',
+        ]);
+
+        $this->initDefaultButton('down', 'down', [
+            'class' => 'sortable-column-btn sortable-column-btn-down',
+        ]);
     }
 
     /**
@@ -136,10 +154,20 @@ class SortableGridColumnWidget extends Column
     {
         if (!isset($this->buttons[$name]) && str_contains($this->template, '{' . $name . '}')) {
             $this->buttons[$name] = function ($url, $model, $key) use ($name, $iconName, $additionalOptions) {
-                $title = ucfirst($name);
 
-                if ($name === 'sort') {
-                    $title = Yii::t('rootlocal-sort', 'Sorting');
+                switch ($name) {
+                    case 'sort':
+                        $title = Yii::t('rootlocal-sort', 'Sorting');
+                        break;
+                    case 'up':
+                        $title = Yii::t('rootlocal-sort', 'Up');
+                        break;
+                    case 'down':
+                        $title = Yii::t('rootlocal-sort', 'Down');
+                        break;
+                    default:
+                        $title = ucfirst($name);
+                        break;
                 }
 
                 $options = array_merge(['title' => $title, 'aria-label' => $title], $additionalOptions, $this->buttonOptions);
@@ -164,7 +192,7 @@ class SortableGridColumnWidget extends Column
             $name = $matches[1];
 
             if (isset($this->visibleButtons[$name])) {
-                $isVisible = $this->visibleButtons[$name] instanceof \Closure
+                $isVisible = $this->visibleButtons[$name] instanceof Closure
                     ? call_user_func($this->visibleButtons[$name], $model, $key, $index)
                     : $this->visibleButtons[$name];
             } else {

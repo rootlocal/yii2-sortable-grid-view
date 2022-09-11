@@ -17,5 +17,7 @@
  * NOTE: this file must be saved in UTF-8 encoding.
  */
 return [
+    'Down' => 'Вниз',
     'Sorting' => 'Сортировка',
+    'Up' => 'ВВерх',
 ];

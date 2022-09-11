@@ -44,7 +44,9 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
 
 
     /**
-     * {@inheritDoc}
+     * Declares event handlers for the [[owner]]'s events.
+     *
+     * @return array events (array keys) and the corresponding event handler methods (array values).
      */
     public function events(): array
     {
@@ -52,16 +54,12 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
     }
 
     /**
-     * @param array $items
-     *
-     * @return void
-     * @throws InvalidConfigException
-     * @throws Throwable
+     * {@inheritDoc}
      */
-    public function gridSort(array $items = []): void
+    public function gridSort(array $items = []): bool
     {
         if (empty($items)) {
-            return;
+            return false;
         }
 
         /** @var ActiveRecord $model */
@@ -91,9 +89,13 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
         if (is_callable($this->afterGridSort)) {
             call_user_func($this->afterGridSort, $model);
         }
+
+        return true;
     }
 
     /**
+     * ModelEvent an event that is triggered before inserting a record.
+     *
      * @return void
      * @throws InvalidConfigException
      */
@@ -125,7 +127,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      */
     public function getSortableAttribute(): string
     {
-        if ($this->_sortableAttribute === null){
+        if ($this->_sortableAttribute === null) {
             $this->_sortableAttribute = 'sort_order';
         }
 

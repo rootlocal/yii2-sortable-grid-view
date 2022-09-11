@@ -4,6 +4,7 @@ namespace rootlocal\widgets\sortable;
 
 use Throwable;
 use yii\base\InvalidConfigException;
+use yii\db\ActiveQuery;
 
 /**
  * Interface SortableGridBehaviorInterface
@@ -13,14 +14,14 @@ use yii\base\InvalidConfigException;
 interface SortableGridBehaviorInterface
 {
     /**
-     * Implementation sorting
+     * Sorting Items
      *
      * @param array $items
-     * @return void
+     * @return bool true if success, false if error
      * @throws InvalidConfigException
      * @throws Throwable
      */
-    public function gridSort(array $items = []);
+    public function gridSort(array $items = []): bool;
 
     /**
      * Getting Database field name for row sorting default value: sort_order

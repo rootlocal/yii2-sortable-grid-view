@@ -2,6 +2,7 @@
 
 namespace rootlocal\widgets\sortable;
 
+use Exception;
 use Throwable;
 use Yii;
 use yii\base\Action;
@@ -40,25 +41,87 @@ class SortableGridAction extends Action
 
 
     /**
+     * @return array|string[]
+     * @throws BadRequestHttpException
      * @throws InvalidConfigException
-     * @throws BadRequestHttpException|Throwable
+     * @throws Throwable
      */
-    public function run()
+    public function run(): array
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $request = Json::decode(Yii::$app->request->getRawBody());
-
-        if (!array_key_exists('items', $request)) {
-            throw new BadRequestHttpException('Don\'t received POST param `items`. ');
-        }
 
         if (!$this->_model->hasMethod('gridSort')) {
             throw new InvalidConfigException('Not found right `SortableGridBehavior` behavior Model class.');
         }
 
-        $this->getModel()->gridSort($request['items']);
+        if (array_key_exists('id', $request) && array_key_exists('action', $request)) {
+            $sortableAttribute = $this->getModel()->sortableAttribute;
+            $tableColumn = $this->getModel()::tableName() . '.' . $sortableAttribute;
+            $owner = $this->getModel()::findOne((int)$request['id']);
+            $target = null;
 
-        return ['status' => 'success'];
+            switch ($request['action']) {
+                case 'up';
+                    $target = $this->getModel()::find()
+                        ->andWhere([$tableColumn => $owner->{$sortableAttribute} - 1])
+                        ->one();
+                    break;
+                case 'down':
+                    $target = $this->getModel()::find()
+                        ->andWhere([$tableColumn => $owner->{$sortableAttribute} + 1])
+                        ->one();
+                    break;
+            }
+
+            if ($target === null) {
+                throw new BadRequestHttpException('Can\'t find target model');
+            }
+
+            $transaction = $this->getModel()->getDb()->beginTransaction();
+
+            try {
+                $ownerSortId = $owner->{$sortableAttribute};
+                $targetSortId = $target->{$sortableAttribute};
+                $owner->{$sortableAttribute} = $targetSortId;
+                $target->{$sortableAttribute} = $ownerSortId;
+
+                if ($owner->save(false) && $target->save(false)) {
+                    $transaction->commit();
+
+                    return [
+                        'status' => 'success',
+                        'action' => $request['action'],
+                        'id' => $request['id'],
+                        'owner' => [
+                            'pk' => $owner->getPrimaryKey(),
+                            'sort_id' => $owner->{$sortableAttribute},
+                        ],
+                        'target' => [
+                            'pk' => $target->getPrimaryKey(),
+                            'sort_id' => $target->{$sortableAttribute},
+                        ],
+                    ];
+
+                } else {
+                    $transaction->rollBack();
+                    return ['status' => 'error', 'message' => 'RollBack, models not Saved'];
+                }
+
+            } catch (Exception|Throwable $e) {
+                $transaction->rollBack();
+                Yii::error($e->getMessage(), self::class);
+                throw $e;
+            }
+
+        }
+
+        if (array_key_exists('items', $request)) {
+            $this->getModel()->gridSort($request['items']);
+            return ['status' => 'success'];
+        }
+
+        throw new BadRequestHttpException('Don\'t received POST param `items`. ');
     }
 
     /**
