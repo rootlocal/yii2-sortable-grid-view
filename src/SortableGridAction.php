@@ -15,7 +15,7 @@ use yii\web\Response;
 /**
  * Action for sortable Yii2 GridView widget.
  *
- * For example:
+ * example:
  *
  * ```php
  * public function actions()
@@ -57,6 +57,8 @@ class SortableGridAction extends Action
         }
 
         $this->getModel()->gridSort($request['items']);
+
+        return ['status' => 'success'];
     }
 
     /**

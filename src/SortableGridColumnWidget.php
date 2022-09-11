@@ -73,11 +73,11 @@ class SortableGridColumnWidget extends Column
      *     'sort' => '<i class="fa fa-sort" aria-hidden="true"></i>',
      * ]
      * ```
-     * Defaults to FontAwesome
+     * Defaults to [FontAwesome](https://fontawesome.com)
      * @see https://fontawesome.com
      */
     public array $icons = [
-        'sort' => '<i class="fa fa-sort" aria-hidden="true"></i>',
+        'sort' => '<i class="fa fa-arrows" aria-hidden="true"></i>',
     ];
     /** @var array visibility conditions for each button. The array keys are the button names (without curly brackets),
      * and the values are the boolean true/false or the anonymous function. When the button name is not specified in
@@ -122,7 +122,7 @@ class SortableGridColumnWidget extends Column
      */
     protected function initDefaultButtons(): void
     {
-        $this->initDefaultButton('sort', 'sort', ['class' => 'sortable-column-btn btn btn-sm text-primary']);
+        $this->initDefaultButton('sort', 'sort', ['class' => 'sortable-column-btn']);
     }
 
     /**

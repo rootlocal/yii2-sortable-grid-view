@@ -1,5 +1,13 @@
-/* active col */
-.sortable-grid-view tr:hover {
-    background: #ddd;
-    /*cursor: move;*/
+.sortable-column-btn {
+    color: #007bff;
+    cursor: pointer;
+}
+
+table tr:hover {
+    background: #fff;
+}
+
+.sortable-column-empty {
+    background-color: #ffc107;
+    border: 1px solid #ffc107;
 }

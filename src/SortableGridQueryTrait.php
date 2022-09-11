@@ -48,7 +48,7 @@ use yii\db\ActiveRecordInterface;
 trait SortableGridQueryTrait
 {
     /**
-     * Order Sorting by 'sortableAttribute' {@see SortableGridBehaviorInterface::getSortableAttribute()}
+     * Order Sorting by 'sortableAttribute' [[SortableGridBehaviorInterface::getSortableAttribute]]
      *
      * @return ActiveQuery
      */

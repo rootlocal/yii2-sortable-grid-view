@@ -1,33 +1,33 @@
 ;(function ($, window, document, undefined) {
     let pluginName = 'sortable_grid_view';
     let $this, csrfToken;
-    let action, delay, items, handle, axis, cursor, opacity;
+    let action, delay, items, handle, axis, cursor, opacity, placeholder, cancel,
+        tolerance, zIndex;
 
     let defaults = {
-
         // Адрес url экшена котроллера на который отправляется запрос
         action: 'sort',
-
         // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения: 'x'
         // (элемент можно будет перетаскивать только по горизонтали) и 'y' (элемент можно будет перетаскивать только по вертикали).
         axis: 'y',
-
         // Позволяет задать вид курсора мыши во время перетаскивания.
         cursor: 'move',
-
         // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
-        opacity: 0.9,
-
+        opacity: false, // 0.5
         // Устанавливает задержку в миллисекундах перед тем, как элемент начнет перетаскиваться
         // (может использоваться для предотвращения перетаскивания при случайном щелчке на элементе).
         delay: 0,
-
         // Указывает какие элементы в группе могут быть отсортированы.
         // Значение  '> *' - все элементы в выбранной группе
         items: 'tr',
-
         // Указывает элемент, при щелчке на который начнется перетаскивание.
         handle: '.sortable-column-btn',
+        // класс, который будет назначен элементу, созданному для заполнения позиции, занимаемой сортируемым элементом до его перемещения в новое расположение
+        placeholder: 'sortable-column-empty',
+        // заблокировать элемент, нужно добавить к нему класс disabled
+        cancel: 'disabled',
+        tolerance: 'pointer', // intersect
+        zIndex: 1000
     };
 
     function Plugin(element, options) {
@@ -41,6 +41,10 @@
         delay = this.options.delay;
         items = this.options.items;
         handle = this.options.handle;
+        placeholder = this.options.placeholder;
+        cancel = this.options.cancel;
+        tolerance  = this.options.tolerance;
+        zIndex = this.options.zIndex;
 
         this.init();
     }
@@ -74,12 +78,28 @@
             axis: axis,
             cursor: cursor,
             opacity: opacity,
-            // The jQuery object representing the helper being sorted.
+            placeholder: placeholder,
+            cancel: cancel,
+            tolerance: tolerance,
+            zIndex: zIndex,
             helper: _helper,
             // This event is triggered when using connected lists, every connected list on drag start receives it.
             activate: function (event, ui) {
             },
+            // Происходит при каждом перемещении мыши в процессе сортировки
+            sort: function (event, ui) {
+            },
+            // Происходит при изменении позиции элемента в результате сортировки, выполненной пользователем
+            change: function (event, ui) {
+            },
+            // Происходит при перемещении элемента в данный сортируемый элемент-контейнер из другого связанного сортируемого элемента-контейнера
+            receive: function (event, ui) {
+            },
+            // Происходит при перемещении элемента из данного сортируемого элемента-контейнера в другой связанный сортируемый элемент-контейнер
+            remove: function (event, ui) {
+            },
             // This event is triggered when the user stopped sorting and the DOM position has changed.
+            // Происходит при завершении перемещения элемента пользователем при условии, что порядок элементов был изменен
             update: function () {
                 let items = {};
                 let i = 0;
@@ -111,8 +131,13 @@
                     }
 
                     if (this.status !== 200) {
-                        throw Error('Error: ' + this.status);
+                        throw Error('Error request server status: ' + this.status);
                     }
+
+                    /*
+                    if (this.response && JSON.parse(this.response).status !== 'success') {
+                    }
+                    */
 
                 };
 
