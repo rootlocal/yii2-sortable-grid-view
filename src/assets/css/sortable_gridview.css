@@ -4,7 +4,7 @@ td.sortable-td {
     padding-right: 0.3rem;
 }
 
-.sortable-column-btn {
+td > .sortable-column-btn {
     color: #007bff;
     cursor: pointer;
 }
@@ -15,5 +15,5 @@ table tr:hover {
 
 .sortable-column-empty {
     background-color: #ffc107;
-    border: 1px solid #ffc107;
+    opacity: 0.8;
 }

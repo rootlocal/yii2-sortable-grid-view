@@ -10,27 +10,19 @@
      */
     let defaults = {
         // Адрес url экшена котроллера на который отправляется запрос
-        action: 'sort',
-        // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения: 'x'
+        action: 'sort', // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения: 'x'
         // (элемент можно будет перетаскивать только по горизонтали) и 'y' (элемент можно будет перетаскивать только по вертикали).
-        axis: 'y',
-        // Позволяет задать вид курсора мыши во время перетаскивания.
-        cursor: 'move',
-        // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
+        axis: 'y', // Позволяет задать вид курсора мыши во время перетаскивания.
+        cursor: 'move', // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
         opacity: false, // 0.5
         // Устанавливает задержку в миллисекундах перед тем, как элемент начнет перетаскиваться
         // (может использоваться для предотвращения перетаскивания при случайном щелчке на элементе).
-        delay: 0,
-        // Указывает какие элементы в группе могут быть отсортированы.
+        delay: 0, // Указывает какие элементы в группе могут быть отсортированы.
         // Значение  '> *' - все элементы в выбранной группе
-        items: 'tr',
-        // Указывает элемент, при щелчке на который начнется перетаскивание.
-        handle: '.sortable-column-btn-sort',
-        // класс, который будет назначен элементу, созданному для заполнения позиции, занимаемой сортируемым элементом до его перемещения в новое расположение
-        placeholder: 'sortable-column-empty',
-        // заблокировать элемент, нужно добавить к нему класс disabled
-        cancel: 'disabled',
-        tolerance: 'pointer', // intersect
+        items: 'tr', // Указывает элемент, при щелчке на который начнется перетаскивание.
+        handle: '.sortable-column-btn-sort', // класс, который будет назначен элементу, созданному для заполнения позиции, занимаемой сортируемым элементом до его перемещения в новое расположение
+        placeholder: 'sortable-column-empty', // заблокировать элемент, нужно добавить к нему класс disabled
+        cancel: 'disabled', tolerance: 'pointer', // intersect
         zIndex: 1000
     };
 
@@ -55,23 +47,20 @@
      * INIT function
      */
     Plugin.prototype.init = function () {
+
         /**
          * Обработчик события при клике на кнопку up в гриде
          */
         $('.sortable-column-btn-up', $this).bind('click', function () {
-            let owner = $(this).parents('tr');
-            let grid = $(this).parents('tbody > tr');
-            let json = JSON.stringify({'id': owner.data('key'), action: 'up'});
+            let clicked = $(this);
+            let json = JSON.stringify({
+                'id': clicked.parents('tr').data('key'),
+                action: 'up'
+            });
 
             // send request server
             _sendPostRequest(json, function (xhr) {
-                grid.each(function () {
-                    let target = $(this).prev();
-                    let copy_owner = owner.clone(true);
-                    let copy_target = target.clone(true);
-                    target.replaceWith(copy_owner);
-                    owner.replaceWith(copy_target);
-                });
+                _replace(clicked, 'up');
             });
         });
 
@@ -79,23 +68,75 @@
          * Обработчик события при клике на кнопку down в гриде
          */
         $('.sortable-column-btn-down', $this).bind('click', function () {
-            let owner = $(this).parents('tr');
-            let grid = $(this).parents('tbody > tr');
-            let json = JSON.stringify({'id': owner.data('key'), action: 'down'});
+            let clicked = $(this);
+            let json = JSON.stringify({
+                'id': clicked.parents('tr').data('key'),
+                action: 'down'
+            });
 
             // send request server
             _sendPostRequest(json, function (xhr) {
-                grid.each(function () {
-                    let target = $(this).next();
-                    let copy_owner = owner.clone(true);
-                    let copy_target = target.clone(true);
-                    target.replaceWith(copy_owner);
-                    owner.replaceWith(copy_target);
-                });
+                _replace(clicked, 'down');
             });
         });
 
         _sortable();
+    };
+
+    /**
+     * Анимация
+     * @param element jquery object
+     * @param duration длительность анимации
+     * @param callback функция callback
+     * @private
+     */
+    this._animation = function (element, duration = 400, callback = false) {
+        element.animate({
+            'background-color': '#ffc107',
+            opacity: 0.7,
+        }, {
+            duration: duration, query: true,
+            complete: function () {
+
+                if (callback) {
+                    callback($(this));
+                }
+            }
+        }, 'linear');
+    };
+
+    /**
+     * Меняет строки таблицы местами
+     *
+     * @param el Object obj JQuery
+     * @param action действие (вверх или вниз)
+     * @private
+     */
+    this._replace = function (el, action = 'up') {
+        let owner = el.parents('tr');
+        let grid = el.parents('tbody > tr');
+
+        grid.each(function () {
+            let target, copy_owner, copy_target;
+
+            if (action === 'down') {
+                target = $(this).next();
+            } else {
+                target = $(this).prev();
+            }
+
+            copy_owner = owner.clone(true);
+            copy_target = target.clone(true);
+
+            _animation(owner, 150, function (element) {
+                element.replaceWith(copy_target);
+            });
+
+            _animation(target, 400, function (element) {
+                element.replaceWith(copy_owner);
+            });
+
+        });
     };
 
     /**
@@ -145,14 +186,7 @@
                 throw Error('Unknown Error');
             }
         }
-
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return; // DONE
-            if (xhr.status !== 200) {
-            }
-        };
-
-    }
+    };
 
     /**
      * JqueryUI Sortable
@@ -179,23 +213,17 @@
             cancel: cancel,
             tolerance: tolerance,
             zIndex: zIndex,
-            helper: _sortableHelper,
-            // This event is triggered when using connected lists, every connected list on drag start receives it.
+            helper: _sortableHelper, // This event is triggered when using connected lists, every connected list on drag start receives it.
             activate: function (event, ui) {
-            },
-            // Происходит при каждом перемещении мыши в процессе сортировки
+            }, // Происходит при каждом перемещении мыши в процессе сортировки
             sort: function (event, ui) {
-            },
-            // Происходит при изменении позиции элемента в результате сортировки, выполненной пользователем
+            }, // Происходит при изменении позиции элемента в результате сортировки, выполненной пользователем
             change: function (event, ui) {
-            },
-            // Происходит при перемещении элемента в данный сортируемый элемент-контейнер из другого связанного сортируемого элемента-контейнера
+            }, // Происходит при перемещении элемента в данный сортируемый элемент-контейнер из другого связанного сортируемого элемента-контейнера
             receive: function (event, ui) {
-            },
-            // Происходит при перемещении элемента из данного сортируемого элемента-контейнера в другой связанный сортируемый элемент-контейнер
+            }, // Происходит при перемещении элемента из данного сортируемого элемента-контейнера в другой связанный сортируемый элемент-контейнер
             remove: function (event, ui) {
-            },
-            // This event is triggered when the user stopped sorting and the DOM position has changed.
+            }, // This event is triggered when the user stopped sorting and the DOM position has changed.
             // Происходит при завершении перемещения элемента пользователем при условии, что порядок элементов был изменен
             update: function () {
                 let items = {};
@@ -223,8 +251,7 @@
         $this = $(this);
         return this.each(function () {
             if (!$.data(this, 'plugin_' + pluginName)) {
-                $.data(this, 'plugin_' + pluginName,
-                    new Plugin(this, options));
+                $.data(this, 'plugin_' + pluginName, new Plugin(this, options));
             }
         });
     };
