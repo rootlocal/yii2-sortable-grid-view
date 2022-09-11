@@ -1,9 +1,13 @@
 ;(function ($, window, document, undefined) {
     let pluginName = 'sortable_grid_view';
     let $this, csrfToken;
-    let action, delay, items, handle, axis, cursor, opacity, placeholder, cancel,
-        tolerance, zIndex;
+    let action, delay, items, handle, axis, cursor, opacity, placeholder, cancel, tolerance, zIndex;
 
+    /**
+     * Default Plugin config
+     *
+     * @type {{cursor: string, cancel: string, delay: number, action: string, handle: string, placeholder: string, axis: string, opacity: boolean, items: string, tolerance: string, zIndex: number}}
+     */
     let defaults = {
         // Адрес url экшена котроллера на который отправляется запрос
         action: 'sort',
@@ -36,7 +40,6 @@
         this._defaults = defaults;
         this._name = pluginName;
         csrfToken = yii.getCsrfToken();
-
         action = this.options.action;
         delay = this.options.delay;
         items = this.options.items;
@@ -45,57 +48,83 @@
         cancel = this.options.cancel;
         tolerance = this.options.tolerance;
         zIndex = this.options.zIndex;
-
         this.init();
     }
 
+    /**
+     * INIT function
+     */
     Plugin.prototype.init = function () {
-
+        /**
+         * Обработчик события при клике на кнопку up в гриде
+         */
         $('.sortable-column-btn-up', $this).bind('click', function () {
             let owner = $(this).parents('tr');
+            let grid = $(this).parents('tbody > tr');
+            let json = JSON.stringify({'id': owner.data('key'), action: 'up'});
+
             // send request server
-            _send(JSON.stringify({'id': owner.data('key'), action: 'up'}));
-
-            $(this).parents('tbody > tr').each(function (el) {
-                let target = $(this).prev();
-                let copy_owner = owner.clone(true);
-                let copy_target = target.clone(true);
-                target.replaceWith(copy_owner);
-                owner.replaceWith(copy_target);
+            _sendPostRequest(json, function (xhr) {
+                grid.each(function () {
+                    let target = $(this).prev();
+                    let copy_owner = owner.clone(true);
+                    let copy_target = target.clone(true);
+                    target.replaceWith(copy_owner);
+                    owner.replaceWith(copy_target);
+                });
             });
-
         });
 
+        /**
+         * Обработчик события при клике на кнопку down в гриде
+         */
         $('.sortable-column-btn-down', $this).bind('click', function () {
             let owner = $(this).parents('tr');
+            let grid = $(this).parents('tbody > tr');
+            let json = JSON.stringify({'id': owner.data('key'), action: 'down'});
+
             // send request server
-            _send(JSON.stringify({'id': owner.data('key'), action: 'down'}));
-
-            $(this).parents('tbody > tr').each(function (el) {
-                let target = $(this).next();
-                let copy_owner = owner.clone(true);
-                let copy_target = target.clone(true);
-                target.replaceWith(copy_owner);
-                owner.replaceWith(copy_target);
+            _sendPostRequest(json, function (xhr) {
+                grid.each(function () {
+                    let target = $(this).next();
+                    let copy_owner = owner.clone(true);
+                    let copy_target = target.clone(true);
+                    target.replaceWith(copy_owner);
+                    owner.replaceWith(copy_target);
+                });
             });
-
         });
 
         _sortable();
     };
 
-    this._helper = function (e, ui) {
-
+    /**
+     * Callback helper for sortable
+     *
+     * @param e
+     * @param ui
+     * @returns {*}
+     * @private
+     */
+    this._sortableHelper = function (e, ui) {
         ui.children().each(function () {
             $(this).width($(this).width());
         });
-
         return ui;
     };
 
-    this._send = function (json) {
+    /**
+     * Отправляет запрос на сервер
+     *
+     * @param json Object Данные которые нужно отправить в формате JSON
+     * @param callback XMLHttpRequest Callback функция в случае успешного выполнения запроса
+     * @private
+     */
+    this._sendPostRequest = function (json, callback = function (xhr) {
+    }) {
         let xhr = new XMLHttpRequest();
         let url = encodeURI(action);
+
         xhr.open('POST', url, true);
         xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         xhr.setRequestHeader('X-CSRF-Token', csrfToken);
@@ -106,27 +135,39 @@
             console.log('Connection timeout');
         }
 
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState !== 4) return; // DONE
-
-            if (xhr.status !== 200) {
-                throw Error('Error request server status: ' + this.status);
+        xhr.onload = function () {
+            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+                // callback function
+                callback(xhr);
+            } else if (xhr.status === 400) {
+                throw Error('Error request server status: ' + xhr.status);
             } else {
-                //console.log(xhr.responseText);
+                throw Error('Unknown Error');
+            }
+        }
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== XMLHttpRequest.DONE) return; // DONE
+            if (xhr.status !== 200) {
             }
         };
 
     }
 
+    /**
+     * JqueryUI Sortable
+     * See documentation [sortable](https://api.jqueryui.com/sortable/)
+     *
+     * @private
+     */
     this._sortable = function () {
-        const grid = $('tbody', $this);
-        const initialIndex = [];
+        let grid = $('tbody', $this);
+        let initialIndex = [];
 
         $('tr', grid).each(function () {
             initialIndex.push($(this).data('key'));
         });
 
-        // https://api.jqueryui.com/sortable/
         grid.sortable({
             items: items,
             delay: delay,
@@ -138,7 +179,7 @@
             cancel: cancel,
             tolerance: tolerance,
             zIndex: zIndex,
-            helper: _helper,
+            helper: _sortableHelper,
             // This event is triggered when using connected lists, every connected list on drag start receives it.
             activate: function (event, ui) {
             },
@@ -172,7 +213,7 @@
                 });
 
                 // Send Items
-                _send(JSON.stringify({'items': items}));
+                _sendPostRequest(JSON.stringify({'items': items}));
 
             }
         }).disableSelection();
