@@ -36,7 +36,7 @@ use yii\web\Response;
 class SortableGridAction extends Action
 {
     /** @var SortableGridBehaviorInterface|ActiveRecord|null */
-    public $_model;
+    private $_model;
 
 
     /**
