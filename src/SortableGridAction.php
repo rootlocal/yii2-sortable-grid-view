@@ -64,12 +64,14 @@ class SortableGridAction extends Action
             switch ($request['action']) {
                 case 'up';
                     $target = $this->getModel()::find()
-                        ->andWhere([$tableColumn => $owner->{$sortableAttribute} - 1])
+                        ->andWhere($tableColumn . ' < :sort', [':sort' => $owner->{$sortableAttribute}])
+                        ->orderBy(['sort_order' => SORT_DESC])
                         ->one();
                     break;
                 case 'down':
                     $target = $this->getModel()::find()
-                        ->andWhere([$tableColumn => $owner->{$sortableAttribute} + 1])
+                        ->andWhere($tableColumn . ' > :sort', [':sort' => $owner->{$sortableAttribute}])
+                        ->orderBy(['sort_order' => SORT_ASC])
                         ->one();
                     break;
             }
