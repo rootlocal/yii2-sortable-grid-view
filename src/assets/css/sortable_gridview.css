@@ -9,11 +9,11 @@ td > .sortable-column-btn {
     cursor: pointer;
 }
 
-table tr:hover {
+tr:hover {
     background: #fff;
 }
 
 .sortable-column-empty {
-    background-color: #ffc107;
+    background-color: #ffc107 !important;
     opacity: 0.8;
 }

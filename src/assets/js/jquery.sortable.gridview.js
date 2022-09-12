@@ -177,13 +177,11 @@
         }
 
         xhr.onload = function () {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
+            if (xhr.readyState === 4 && xhr.status === 200) {
                 // callback function
                 callback(xhr);
             } else if (xhr.status === 400) {
                 throw Error('Error request server status: ' + xhr.status);
-            } else {
-                throw Error('Unknown Error');
             }
         }
     };
