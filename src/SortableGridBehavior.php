@@ -108,16 +108,19 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
             throw new InvalidConfigException("Invalid sortable attribute `{$this->sortableAttribute}`.");
         }
 
-        $query = $model::find();
+        if (empty($model->{$this->sortableAttribute})) {
+            $query = $model::find();
 
-        if (is_callable($this->scope)) {
-            call_user_func($this->scope, $query);
+            if (is_callable($this->scope)) {
+                call_user_func($this->scope, $query);
+            }
+
+            /* Override model alias if defined in the model's class */
+            $query->from([$model::tableName() => $model::tableName()]);
+            $maxOrder = $query->max('{{' . trim($model::tableName(), '{}') . '}}.[[' . $this->sortableAttribute . ']]');
+            $model->{$this->sortableAttribute} = $maxOrder + 1;
         }
 
-        /* Override model alias if defined in the model's class */
-        $query->from([$model::tableName() => $model::tableName()]);
-        $maxOrder = $query->max('{{' . trim($model::tableName(), '{}') . '}}.[[' . $this->sortableAttribute . ']]');
-        $model->{$this->sortableAttribute} = $maxOrder + 1;
     }
 
     /**
