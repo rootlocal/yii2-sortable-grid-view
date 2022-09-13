@@ -33,6 +33,8 @@ class SortableWidget extends Widget
     public $sortableAction = ['sort'];
     /** @var string Css JQuery Selector Default <code>.grid-view</code> */
     public string $selector = '.grid-view';
+    /** @var string Css JQuery Selector for sort value col */
+    public string $sortValueSelector = '.sort_order';
     /**
      * @var array Options for js plugin
      * <hr>
@@ -48,10 +50,6 @@ class SortableWidget extends Widget
      *
      * **opacity** `'0.9'` Устанавливает прозрачность элемента помощника<br>
      * (элемент, который отображается во время перетаскивания).<br>
-     *
-     * **delay** `0` Устанавливает задержку в миллисекундах перед тем, как элемент<br>
-     * начнет перетаскиваться (может использоваться для предотвращения перетаскивания<br>
-     * при случайном щелчке на элементе).<br>
      *
      * **items** `tr` Указывает какие элементы в группе могут быть отсортированы.<br>
      * Значение  `'> *'` - все элементы в выбранной группе<br>
@@ -116,6 +114,7 @@ class SortableWidget extends Widget
 
             $defaultOptions = [
                 'action' => $this->sortableAction,
+                'sortValueSelector' => $this->sortValueSelector,
             ];
 
             $options = ArrayHelper::merge($defaultOptions, $this->options);
