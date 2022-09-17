@@ -17,7 +17,9 @@ interface SortableGridBehaviorInterface
      * Сортировка строк таблицы перетаскиванием "Drag-and-drop"
      *
      * @param array $items ['old_primary_key' => 'new_primary_key']
-     * @return array New values attributes (new sorted values) [['pk' => `primary_key_value`, 'sort_id' => `sort_value`]]
+     * @return array New values attributes (new sorted values)
+     * [['id' => `primary_key_value`, 'sort_id' => `sort_value`]]
+     *
      * @throws InvalidConfigException
      * @throws Throwable
      */
@@ -28,7 +30,9 @@ interface SortableGridBehaviorInterface
      *
      * @param string $button String name "up" or "down" action button
      * @param int $id Primary Key value Model
-     * @return array new values models
+     * @return array new values models New values attributes (new sorted values)
+     * [['id' => `primary_key_value`, 'sort_id' => `sort_value`]]
+     *
      * @throws BadRequestHttpException
      */
     public function gridSortUpOrDownButton(string $button, int $id): array;

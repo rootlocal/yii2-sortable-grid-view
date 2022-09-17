@@ -43,7 +43,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
     public $afterGridSort;
 
     /** @var string|null Database field name for row sorting default value: sort_order */
-    public ?string $_sortableAttribute = null;
+    private ?string $_sortableAttribute = null;
 
 
     /**
@@ -77,17 +77,13 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
         $target = $model::find()->select([$this->getSortableAttribute(), $primaryKey]);
 
         if ($button === 'up') {
-
             $target = $target->andWhere($model::tableName() . '.' . $this->sortableAttribute . ' < :sort', [
                 ':sort' => $owner->{$this->sortableAttribute}
             ])->orderBy([$this->sortableAttribute => SORT_DESC])->one();
-
         } else {
-
             $target = $target->andWhere($model::tableName() . '.' . $this->sortableAttribute . ' > :sort', [
                 ':sort' => $owner->{$this->sortableAttribute}
             ])->orderBy([$this->sortableAttribute => SORT_ASC])->one();
-
         }
 
         if ($target === null) {
@@ -104,7 +100,6 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
 
             if ($owner->save(false)
                 && $target->save(false)) {
-
                 $transaction->commit();
 
                 return [
@@ -137,7 +132,9 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
         }
 
         if (!$model->hasAttribute($this->getSortableAttribute())) {
-            throw new InvalidConfigException("Model does not have sortable attribute `{$this->getSortableAttribute()}`.");
+            throw new InvalidConfigException(
+                "Model does not have sortable attribute `{$this->getSortableAttribute()}`."
+            );
         }
 
         /** @var int[] $newOrder */
@@ -150,7 +147,9 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
                 ->select([$this->getSortableAttribute(), $primaryKey])
                 ->where([$primaryKey => $new])->one();
 
-            $newOrder[$old] = !empty($models[$new]->{$this->getSortableAttribute()}) ? $models[$new]->{$this->getSortableAttribute()} : $new;
+            $newOrder[$old] =
+                !empty($models[$new]->{$this->getSortableAttribute()})
+                    ? $models[$new]->{$this->getSortableAttribute()} : $new;
         }
 
         $transaction = $model::getDb()->beginTransaction();
@@ -200,10 +199,10 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
 
             /* Override model alias if defined in the model's class */
             $query->from([$model::tableName() => $model::tableName()]);
-            $maxOrder = $query->max('{{' . trim($model::tableName(), '{}') . '}}.[[' . $this->getSortableAttribute() . ']]');
+            $maxOrder = $query->max('{{' . trim($model::tableName(), '{}')
+                . '}}.[[' . $this->getSortableAttribute() . ']]');
             $model->{$this->getSortableAttribute()} = $maxOrder + 1;
         }
-
     }
 
     /**
@@ -229,5 +228,4 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
     {
         $this->_sortableAttribute = $sortableAttribute;
     }
-
 }
