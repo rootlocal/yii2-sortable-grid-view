@@ -2,7 +2,6 @@
 
 namespace rootlocal\widgets\sortable;
 
-use Exception;
 use Throwable;
 use Yii;
 use yii\base\Action;
@@ -50,80 +49,32 @@ class SortableGridAction extends Action
     {
         Yii::$app->response->format = Response::FORMAT_JSON;
         $request = Json::decode(Yii::$app->request->getRawBody());
+        $result = [];
 
-        if (!$this->_model->hasMethod('gridSort')) {
+        if (!$this->_model->hasMethod('gridSort') || !$this->_model->hasMethod('gridSortUpOrDownButton')) {
             throw new InvalidConfigException('Not found right `SortableGridBehavior` behavior Model class.');
         }
 
-        if (array_key_exists('id', $request) && array_key_exists('action', $request)) {
-            $sortableAttribute = $this->getModel()->sortableAttribute;
-            $tableColumn = $this->getModel()::tableName() . '.' . $sortableAttribute;
-            $owner = $this->getModel()::findOne((int)$request['id']);
-            $target = null;
+        if (!array_key_exists('action', $request)) {
+            return ['status' => 'error', 'message' => 'parameter "action" not requested'];
+        }
 
-            switch ($request['action']) {
-                case 'up';
-                    $target = $this->getModel()::find()
-                        ->andWhere($tableColumn . ' < :sort', [':sort' => $owner->{$sortableAttribute}])
-                        ->orderBy(['sort_order' => SORT_DESC])
-                        ->one();
-                    break;
-                case 'down':
-                    $target = $this->getModel()::find()
-                        ->andWhere($tableColumn . ' > :sort', [':sort' => $owner->{$sortableAttribute}])
-                        ->orderBy(['sort_order' => SORT_ASC])
-                        ->one();
-                    break;
-            }
+        switch ($request['action']) {
+            case 'up':
+            case 'down':
+                $result = $this->getModel()->gridSortUpOrDownButton($request['action'], $request['id']);
+                break;
 
-            if ($target === null) {
-                throw new BadRequestHttpException('Can\'t find target model');
-            }
-
-            $transaction = $this->getModel()->getDb()->beginTransaction();
-
-            try {
-                $ownerSortId = $owner->{$sortableAttribute};
-                $targetSortId = $target->{$sortableAttribute};
-                $owner->{$sortableAttribute} = $targetSortId;
-                $target->{$sortableAttribute} = $ownerSortId;
-
-                if ($owner->save(false) && $target->save(false)) {
-                    $transaction->commit();
-
-                    return [
-                        'status' => 'success',
-                        'action' => $request['action'],
-                        'id' => $request['id'],
-                        'owner' => [
-                            'pk' => $owner->getPrimaryKey(),
-                            'sort_id' => $owner->{$sortableAttribute},
-                        ],
-                        'target' => [
-                            'pk' => $target->getPrimaryKey(),
-                            'sort_id' => $target->{$sortableAttribute},
-                        ],
-                    ];
-
+            case 'sortable':
+                if (array_key_exists('items', $request) && !empty($request['items'])) {
+                    $result = $this->getModel()->gridSort($request['items']);
                 } else {
-                    $transaction->rollBack();
-                    return ['status' => 'error', 'message' => 'RollBack, models not Saved'];
+                    return ['status' => 'error', 'message' => 'parameter "items" not requested'];
                 }
-
-            } catch (Exception|Throwable $e) {
-                $transaction->rollBack();
-                Yii::error($e->getMessage(), self::class);
-                throw $e;
-            }
-
+                break;
         }
 
-        if (array_key_exists('items', $request)) {
-            $this->getModel()->gridSort($request['items']);
-            return ['status' => 'success'];
-        }
-
-        throw new BadRequestHttpException('Don\'t received POST param `items`. ');
+        return ['status' => empty($result) ? 'error' : 'success', 'result' => Json::htmlEncode($result), 'action' => $request['action']];
     }
 
     /**

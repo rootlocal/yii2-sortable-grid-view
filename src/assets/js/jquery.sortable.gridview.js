@@ -1,28 +1,41 @@
-;(function ($, window, document, undefined) {
+;(function ($) {
     let pluginName = 'sortable_grid_view';
-    let $this, csrfToken;
-    let action, delay, items, handle, axis, cursor, opacity, placeholder, cancel, tolerance, zIndex;
+    let $this;
+    let action, items, handle, axis, cursor, opacity, placeholder, cancel, tolerance, zIndex, sortValueSelector;
 
-    /**
-     * Default Plugin config
-     *
-     * @type {{cursor: string, cancel: string, delay: number, action: string, handle: string, placeholder: string, axis: string, opacity: boolean, items: string, tolerance: string, zIndex: number}}
-     */
     let defaults = {
         // Адрес url экшена котроллера на который отправляется запрос
-        action: 'sort', // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения: 'x'
-        // (элемент можно будет перетаскивать только по горизонтали) и 'y' (элемент можно будет перетаскивать только по вертикали).
-        axis: 'y', // Позволяет задать вид курсора мыши во время перетаскивания.
-        cursor: 'move', // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
-        opacity: false, // 0.5
-        // Устанавливает задержку в миллисекундах перед тем, как элемент начнет перетаскиваться
-        // (может использоваться для предотвращения перетаскивания при случайном щелчке на элементе).
-        delay: 0, // Указывает какие элементы в группе могут быть отсортированы.
+        action: 'sort',
+        sortValueSelector: '.sort_order',
+
+        // Позволяет задать ось, по которой можно перетаскивать элемент. Возможные значения:
+        // 'x' (элемент можно будет перетаскивать только по горизонтали) и
+        // 'y' (элемент можно будет перетаскивать только по вертикали).
+        axis: 'y',
+
+        // Позволяет задать вид курсора мыши во время перетаскивания.
+        cursor: 'move',
+
+        // Устанавливает прозрачность элемента помощника (элемент, который отображается во время перетаскивания).
+        opacity: false,
+
+        // Указывает какие элементы в группе могут быть отсортированы.
         // Значение  '> *' - все элементы в выбранной группе
-        items: 'tr', // Указывает элемент, при щелчке на который начнется перетаскивание.
-        handle: '.sortable-column-btn-sort', // класс, который будет назначен элементу, созданному для заполнения позиции, занимаемой сортируемым элементом до его перемещения в новое расположение
-        placeholder: 'sortable-column-empty', // заблокировать элемент, нужно добавить к нему класс disabled
-        cancel: 'disabled', tolerance: 'pointer', // intersect
+        items: 'tr',
+
+        // Указывает элемент, при щелчке на который начнется перетаскивание.
+        handle: '.sortable-column-btn-sort',
+
+        // класс, который будет назначен элементу, созданному для заполнения позиции,
+        // занимаемой сортируемым элементом до его перемещения в новое расположение
+        placeholder: 'sortable-column-empty',
+
+        // заблокировать элемент, нужно добавить к нему класс disabled
+        cancel: 'disabled',
+
+        // intersect | pointer
+        tolerance: 'intersect',
+
         zIndex: 1000
     };
 
@@ -31,51 +44,38 @@
         this.options = $.extend({}, defaults, options);
         this._defaults = defaults;
         this._name = pluginName;
-        csrfToken = yii.getCsrfToken();
         action = this.options.action;
-        delay = this.options.delay;
         items = this.options.items;
         handle = this.options.handle;
         placeholder = this.options.placeholder;
         cancel = this.options.cancel;
         tolerance = this.options.tolerance;
         zIndex = this.options.zIndex;
+        sortValueSelector = this.options.sortValueSelector;
         this.init();
     }
 
-    /**
-     * INIT function
-     */
     Plugin.prototype.init = function () {
-
-        /**
-         * Обработчик события при клике на кнопку up в гриде
-         */
         $('.sortable-column-btn-up', $this).bind('click', function () {
             let clicked = $(this);
             let json = JSON.stringify({
-                'id': clicked.parents('tr').data('key'),
-                action: 'up'
+                action: 'up',
+                id: clicked.parents('tr').data('key'),
             });
 
-            // send request server
-            _sendPostRequest(json, function (xhr) {
+            _sendPostRequest(json, function () {
                 _replace(clicked, 'up');
             });
         });
 
-        /**
-         * Обработчик события при клике на кнопку down в гриде
-         */
         $('.sortable-column-btn-down', $this).bind('click', function () {
             let clicked = $(this);
             let json = JSON.stringify({
-                'id': clicked.parents('tr').data('key'),
-                action: 'down'
+                action: 'down',
+                id: clicked.parents('tr').data('key'),
             });
 
-            // send request server
-            _sendPostRequest(json, function (xhr) {
+            _sendPostRequest(json, function () {
                 _replace(clicked, 'down');
             });
         });
@@ -83,115 +83,101 @@
         _sortable();
     };
 
-    /**
-     * Анимация
-     * @param element jquery object
-     * @param duration длительность анимации
-     * @param callback функция callback
-     * @private
-     */
-    this._animation = function (element, duration = 400, callback = false) {
-        element.animate({
-            'background-color': '#ffc107',
-            opacity: 0.7,
-        }, {
-            duration: duration, query: true,
-            complete: function () {
-
-                if (callback) {
-                    callback($(this));
-                }
-            }
-        }, 'linear');
-    };
-
-    /**
-     * Меняет строки таблицы местами
-     *
-     * @param el Object obj JQuery
-     * @param action действие (вверх или вниз)
-     * @private
-     */
-    this._replace = function (el, action = 'up') {
-        let owner = el.parents('tr');
-        let grid = el.parents('tbody > tr');
-
-        grid.each(function () {
-            let target, copy_owner, copy_target;
-
-            if (action === 'down') {
+    this._replace = function (sort_element, sort_action = 'up') {
+        let owner = sort_element.parents('tr');
+        sort_element.parents('tbody > tr').each(function () {
+            let target;
+            if (sort_action === 'down') {
                 target = $(this).next();
+                owner.detach().insertAfter(target);
             } else {
                 target = $(this).prev();
+                owner.detach().insertBefore(target);
             }
-
-            copy_owner = owner.clone(true);
-            copy_target = target.clone(true);
-
-            _animation(owner, 150, function (element) {
-                element.replaceWith(copy_target);
-            });
-
-            _animation(target, 400, function (element) {
-                element.replaceWith(copy_owner);
-            });
-
         });
     };
 
-    /**
-     * Callback helper for sortable
-     *
-     * @param e
-     * @param ui
-     * @returns {*}
-     * @private
-     */
     this._sortableHelper = function (e, ui) {
+
         ui.children().each(function () {
             $(this).width($(this).width());
         });
+
         return ui;
     };
 
-    /**
-     * Отправляет запрос на сервер
-     *
-     * @param json Object Данные которые нужно отправить в формате JSON
-     * @param callback XMLHttpRequest Callback функция в случае успешного выполнения запроса
-     * @private
-     */
-    this._sendPostRequest = function (json, callback = function (xhr) {
+    this._sendPostRequest = function (json, sendPostRequestCallback = function () {
+        return false;
     }) {
-        let xhr = new XMLHttpRequest();
-        let url = encodeURI(action);
 
-        xhr.open('POST', url, true);
-        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-        xhr.setRequestHeader('X-CSRF-Token', csrfToken);
-        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-        xhr.send(json);
+        $.ajax({
+            url: encodeURI(action),
+            method: 'POST',
+            dataType: 'json',
+            async: true,
+            cache: false,
+            data: json,
 
-        xhr.ontimeout = function () {
-            console.log('Connection timeout');
-        }
+            beforeSend: function (request) {
+                request.setRequestHeader('X-CSRF-Token', yii.getCsrfToken());
+                request.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+                request.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            },
 
-        xhr.onload = function () {
-            if (xhr.readyState === 4 && xhr.status === 200) {
-                // callback function
-                callback(xhr);
-            } else if (xhr.status === 400) {
-                throw Error('Error request server status: ' + xhr.status);
+            success: function (response) {
+                if (response.status === 'success' && !$.isEmptyObject(response.result)) {
+                    let json = JSON.parse(response.result);
+                    let result = [];
+
+                    for (let key in json) {
+                        result[json[key].id] = json[key].sort_id;
+                    }
+
+                    $('tr', $('tbody', $this)).each(function () {
+                        let key = $(this).data('key');
+
+                        if (result.indexOf(key)) {
+                            let newValue = result[key];
+                            $(this).find(sortValueSelector).text(newValue);
+                        }
+
+                    });
+                }
+            },
+
+            complete: function (jqXHR, exception) {
+                if (exception === 'success') {
+                    sendPostRequestCallback(jqXHR);
+                }
+            },
+
+            statusCode: {
+                400: function (e) {
+                    console.log(e.responseJSON.name);
+                }
+            },
+
+            error: function (jqXHR, exception) {
+                if (jqXHR.status === 0) {
+                    console.log('Not connect. Verify Network.');
+                } else if (jqXHR.status === 404) {
+                    console.log('Requested page not found (404).');
+                } else if (jqXHR.status === 500) {
+                    console.log('Internal Server Error (500).');
+                } else if (exception === 'parsererror') {
+                    console.log('Requested JSON parse failed.');
+                } else if (exception === 'timeout') {
+                    console.log('Time out error.');
+                } else if (exception === 'abort') {
+                    console.log('Ajax request aborted.');
+                } else {
+                    //console.log('Uncaught Error. ' + jqXHR.responseText);
+                }
             }
-        }
+        });
+
     };
 
-    /**
-     * JqueryUI Sortable
-     * See documentation [sortable](https://api.jqueryui.com/sortable/)
-     *
-     * @private
-     */
     this._sortable = function () {
         let grid = $('tbody', $this);
         let initialIndex = [];
@@ -202,7 +188,6 @@
 
         grid.sortable({
             items: items,
-            delay: delay,
             handle: handle,
             axis: axis,
             cursor: cursor,
@@ -211,36 +196,21 @@
             cancel: cancel,
             tolerance: tolerance,
             zIndex: zIndex,
-            helper: _sortableHelper, // This event is triggered when using connected lists, every connected list on drag start receives it.
-            activate: function (event, ui) {
-            }, // Происходит при каждом перемещении мыши в процессе сортировки
-            sort: function (event, ui) {
-            }, // Происходит при изменении позиции элемента в результате сортировки, выполненной пользователем
-            change: function (event, ui) {
-            }, // Происходит при перемещении элемента в данный сортируемый элемент-контейнер из другого связанного сортируемого элемента-контейнера
-            receive: function (event, ui) {
-            }, // Происходит при перемещении элемента из данного сортируемого элемента-контейнера в другой связанный сортируемый элемент-контейнер
-            remove: function (event, ui) {
-            }, // This event is triggered when the user stopped sorting and the DOM position has changed.
-            // Происходит при завершении перемещения элемента пользователем при условии, что порядок элементов был изменен
+            helper: _sortableHelper,
             update: function () {
                 let items = {};
-                let i = 0;
 
-                $('tr', grid).each(function () {
+                $(this).children().each(function (index) {
                     let currentKey = $(this).data('key');
 
-                    if (initialIndex[i] !== currentKey) {
-                        items[currentKey] = initialIndex[i];
-                        initialIndex[i] = currentKey;
+                    if (initialIndex[index] !== currentKey) {
+                        items[currentKey] = initialIndex[index];
+                        initialIndex[index] = currentKey;
                     }
 
-                    ++i;
                 });
 
-                // Send Items
-                _sendPostRequest(JSON.stringify({'items': items}));
-
+                _sendPostRequest(JSON.stringify({'action': 'sortable', 'items': items}));
             }
         }).disableSelection();
     };
@@ -254,4 +224,4 @@
         });
     };
 
-})(jQuery, window, document);
+})(jQuery);
