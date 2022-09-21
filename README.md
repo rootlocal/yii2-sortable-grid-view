@@ -67,6 +67,24 @@ class BookQuery extends ActiveQuery
 }
 ~~~
 
+### Controller
+~~~php
+     /**
+     * {@inheritDoc}
+     */
+    public function actions(): array
+    {
+        return [
+            'sort' => [
+                'class' => SortableGridAction::class,
+                'model' => Book::class,
+            ]
+
+        ];
+    }
+
+~~~
+
 ### Sorting
 
 ~~~php
