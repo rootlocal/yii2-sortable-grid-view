@@ -9,7 +9,6 @@ use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
 use yii\db\ActiveRecordInterface;
 use yii\helpers\Json;
-use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
 /**
@@ -41,7 +40,6 @@ class SortableGridAction extends Action
 
     /**
      * @return array|string[]
-     * @throws BadRequestHttpException
      * @throws InvalidConfigException
      * @throws Throwable
      */
@@ -59,22 +57,29 @@ class SortableGridAction extends Action
             return ['status' => 'error', 'message' => 'parameter "action" not requested'];
         }
 
+        $model = $this->getModel();
+
         switch ($request['action']) {
             case 'up':
             case 'down':
-                $result = $this->getModel()->gridSortUpOrDownButton($request['action'], $request['id']);
+                $result = $model->gridSortUpOrDownButton($request['action'], $request['id']);
                 break;
 
             case 'sortable':
                 if (array_key_exists('items', $request) && !empty($request['items'])) {
-                    $result = $this->getModel()->gridSort($request['items']);
+                    $result = $model->gridSort($request['items']);
                 } else {
                     return ['status' => 'error', 'message' => 'parameter "items" not requested'];
                 }
                 break;
         }
 
-        return ['status' => empty($result) ? 'error' : 'success', 'result' => Json::htmlEncode($result), 'action' => $request['action']];
+        return [
+            'status' => empty($result) ? 'error' : 'success',
+            'result' => Json::htmlEncode($result),
+            'action' => $request['action'],
+            'message' => empty($result) ? $model->getFirstError($model->getSortableAttribute()) : '',
+        ];
     }
 
     /**

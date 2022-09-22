@@ -2,9 +2,7 @@
 
 namespace rootlocal\widgets\sortable;
 
-use Throwable;
 use yii\base\InvalidConfigException;
-use yii\web\BadRequestHttpException;
 
 /**
  * Interface SortableGridBehaviorInterface
@@ -21,7 +19,6 @@ interface SortableGridBehaviorInterface
      * [['id' => `primary_key_value`, 'sort_id' => `sort_value`]]
      *
      * @throws InvalidConfigException
-     * @throws Throwable
      */
     public function gridSort(array $items = []): array;
 
@@ -33,7 +30,7 @@ interface SortableGridBehaviorInterface
      * @return array new values models New values attributes (new sorted values)
      * [['id' => `primary_key_value`, 'sort_id' => `sort_value`]]
      *
-     * @throws BadRequestHttpException
+     * @throws InvalidConfigException
      */
     public function gridSortUpOrDownButton(string $button, int $id): array;
 
@@ -43,11 +40,4 @@ interface SortableGridBehaviorInterface
      * @return string
      */
     public function getSortableAttribute(): string;
-
-    /**
-     * Setting Database field name for row sorting
-     *
-     * @param string $sortableAttribute
-     */
-    public function setSortableAttribute(string $sortableAttribute): void;
 }
