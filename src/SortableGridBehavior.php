@@ -9,7 +9,6 @@ use yii\base\Behavior;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
-use yii\web\BadRequestHttpException;
 
 /**
  * Behavior for sortable Yii2 GridView widget.
@@ -31,19 +30,16 @@ use yii\web\BadRequestHttpException;
  * }
  * ```
  *
- * @property string $sortableAttribute Database field name for row sorting default value: sort_order
- *
  * @package rootlocal\widgets\sortable
  */
 class SortableGridBehavior extends Behavior implements SortableGridBehaviorInterface
 {
-    /** @var Closure|mixed Callable function for query */
+    /** @var Closure|mixed|null Callable function for query */
     public $scope;
-    /** @var Closure|mixed Callable function for after before insert sorting */
+    /** @var Closure|mixed|null Callable function for after before insert sorting */
     public $afterGridSort;
-
-    /** @var string|null Database field name for row sorting default value: sort_order */
-    public ?string $_sortableAttribute = null;
+    /** @var string Database field name for row sorting default value: sort_order */
+    public string $sortableAttribute = 'sort_order';
 
 
     /**
@@ -61,14 +57,8 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      */
     public function gridSortUpOrDownButton(string $button, int $id): array
     {
-        /** @var ActiveRecord $model */
-        $model = $this->owner;
-        /** @var ?string $primaryKey */
-        $primaryKey = !empty($model::primaryKey()) && is_array($model::primaryKey()) ? $model::primaryKey()[0] : null;
-
-        if ($primaryKey === null) {
-            throw new InvalidConfigException("Model does not have primaryKey");
-        }
+        $model = $this->loadModel();
+        $primaryKey = $this->primaryKey();
 
         $owner = $model->find()
             ->select([$this->getSortableAttribute(), $primaryKey])
@@ -77,21 +67,18 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
         $target = $model::find()->select([$this->getSortableAttribute(), $primaryKey]);
 
         if ($button === 'up') {
-
             $target = $target->andWhere($model::tableName() . '.' . $this->sortableAttribute . ' < :sort', [
                 ':sort' => $owner->{$this->sortableAttribute}
             ])->orderBy([$this->sortableAttribute => SORT_DESC])->one();
-
         } else {
-
             $target = $target->andWhere($model::tableName() . '.' . $this->sortableAttribute . ' > :sort', [
                 ':sort' => $owner->{$this->sortableAttribute}
             ])->orderBy([$this->sortableAttribute => SORT_ASC])->one();
-
         }
 
         if ($target === null) {
-            throw new BadRequestHttpException('Can\'t find target model');
+            $model->addError($this->sortableAttribute, 'Move error: Destination Not Found');
+            return [];
         }
 
         $transaction = $model->getDb()->beginTransaction();
@@ -104,7 +91,6 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
 
             if ($owner->save(false)
                 && $target->save(false)) {
-
                 $transaction->commit();
 
                 return [
@@ -119,7 +105,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
             Yii::error($e->getMessage(), self::class);
         }
 
-        throw new BadRequestHttpException('Unknown error');
+        return [];
     }
 
     /**
@@ -127,19 +113,8 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      */
     public function gridSort(array $items = []): array
     {
-        /** @var ActiveRecord $model */
-        $model = $this->owner;
-        /** @var ?string $primaryKey */
-        $primaryKey = !empty($model::primaryKey()) && is_array($model::primaryKey()) ? $model::primaryKey()[0] : null;
-
-        if ($primaryKey === null) {
-            throw new InvalidConfigException("Model does not have primaryKey");
-        }
-
-        if (!$model->hasAttribute($this->getSortableAttribute())) {
-            throw new InvalidConfigException("Model does not have sortable attribute `{$this->getSortableAttribute()}`.");
-        }
-
+        $model = $this->loadModel();
+        $primaryKey = $this->primaryKey();
         /** @var int[] $newOrder */
         $newOrder = [];
         /** @var ActiveRecord[] $models */
@@ -150,7 +125,9 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
                 ->select([$this->getSortableAttribute(), $primaryKey])
                 ->where([$primaryKey => $new])->one();
 
-            $newOrder[$old] = !empty($models[$new]->{$this->getSortableAttribute()}) ? $models[$new]->{$this->getSortableAttribute()} : $new;
+            $newOrder[$old] =
+                !empty($models[$new]->{$this->getSortableAttribute()})
+                    ? $models[$new]->{$this->getSortableAttribute()} : $new;
         }
 
         $transaction = $model::getDb()->beginTransaction();
@@ -184,12 +161,7 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      */
     public function beforeInsert(): void
     {
-        /** @var ActiveRecord $model */
-        $model = $this->owner;
-
-        if (!$model->hasAttribute($this->getSortableAttribute())) {
-            throw new InvalidConfigException("Invalid sortable attribute `{$this->getSortableAttribute()}`.");
-        }
+        $model = $this->loadModel();
 
         if (empty($model->{$this->getSortableAttribute()})) {
             $query = $model::find();
@@ -200,10 +172,10 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
 
             /* Override model alias if defined in the model's class */
             $query->from([$model::tableName() => $model::tableName()]);
-            $maxOrder = $query->max('{{' . trim($model::tableName(), '{}') . '}}.[[' . $this->getSortableAttribute() . ']]');
+            $maxOrder = $query->max('{{%' . trim($model::tableName(), '{}%')
+                . '}}.[[' . $this->getSortableAttribute() . ']]');
             $model->{$this->getSortableAttribute()} = $maxOrder + 1;
         }
-
     }
 
     /**
@@ -213,21 +185,42 @@ class SortableGridBehavior extends Behavior implements SortableGridBehaviorInter
      */
     public function getSortableAttribute(): string
     {
-        if ($this->_sortableAttribute === null) {
-            $this->_sortableAttribute = 'sort_order';
-        }
-
-        return $this->_sortableAttribute;
+        return $this->sortableAttribute;
     }
 
     /**
-     * Setting Database field name for row sorting
-     *
-     * @param string $sortableAttribute
+     * @return  ActiveRecord
+     * @throws InvalidConfigException
      */
-    public function setSortableAttribute(string $sortableAttribute): void
+    private function loadModel(): ActiveRecord
     {
-        $this->_sortableAttribute = $sortableAttribute;
+        /** @var ActiveRecord $model */
+        $model = $this->owner;
+
+        if (!$model->hasAttribute($this->getSortableAttribute())) {
+            throw new InvalidConfigException(sprintf(
+                'Model does not have sortable attribute: "%s"',
+                $this->getSortableAttribute()
+            ));
+        }
+
+        return $model;
     }
 
+    /**
+     * @return string
+     * @throws InvalidConfigException
+     */
+    private function primaryKey(): string
+    {
+        $model = $this->loadModel();
+        /** @var ?string $primaryKey */
+        $primaryKey = !empty($model::primaryKey()) && is_array($model::primaryKey()) ? $model::primaryKey()[0] : null;
+
+        if ($primaryKey === null) {
+            throw new InvalidConfigException("Model does not have primaryKey");
+        }
+
+        return $primaryKey;
+    }
 }
